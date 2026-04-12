@@ -1,4 +1,4 @@
-# Tracing The Arc
+# Arc As A School Project
 
 I didn't start Arc just as a programming language. I started it because I wanted to be different.
 
