@@ -1,1 +1,2 @@
-# Project-Arc
+# Tracing The Arc
+I didn't start Arc just as a programming language. I started this to be different. The language faced real constraints while development. I didn't had a Desktop or a PC while I started this project. I coded the entire thing on my Android tablet, which ran Linux via Termux. Although the tablet was handling it, it faced some real issues, it was slow, I only had 4GB of RAM on it, and a low end processor which barely ran properly. I could connect a keyboard and mouse, but it was a gamble, as there was a tiny bit of probablity it would connect properly. 
