@@ -1,7 +1,6 @@
-# lexer.py
-
-# ── Token Types ──────────────────────────────────────────────
-TT_INT        = 'INT'
+#lexer.py 
+#---Token Types----------------------------------------------------------------------------------------------
+TT_INTEGER    = 'INTEGER'
 TT_FLOAT      = 'FLOAT'
 TT_STRING     = 'STRING'
 TT_BOOL       = 'BOOL'
@@ -36,6 +35,7 @@ TT_DOT        = 'DOT'         # .
 TT_COLON      = 'COLON'       # :
 TT_EOF        = 'EOF'
 
+#---Keywords----------------------------------------------------------------------------------------------
 KEYWORDS = {
     'dec', 'const', 'func', 'return',
     'if', 'else', 'elif',
@@ -46,213 +46,262 @@ KEYWORDS = {
     'try', 'catch', 'drop'
 }
 
-
-# ── Token ─────────────────────────────────────────────────────
+#---Tokens-------------------------------------------------------------------------------------------------
 class Token:
-    def __init__(self, type_, value, line):
-        self.type  = type_
-        self.value = value
-        self.line  = line
+    """
+    Structures all the token instances, the template for all the tokens, this is where  we input raw data about the tokens, it comes out as structured form ready to be appended to tokens list.
+    """
+    def __init__(self,type_,value,line):
+        self.type_ = type_
+        self.value = value 
+        self.line = line 
 
+    #Represents a formatted structure when printed instead of memory address.
     def __repr__(self):
-        return f'Token({self.type}, {self.value!r}, line={self.line})'
+        if self.value is not None: #if the token has a value
+            return f"({self.type_}:{self.value}, line = {self.line})" #return with type and its value
+        else: #if it doesn't have a value
+            return f"({self.type_}, line = {self.line})" #return only the type
 
-
-# ── Lexer Error ───────────────────────────────────────────────
+#---LexerError-------------------------------------------------------------------------------------------
 class LexerError(Exception):
-    def __init__(self, message, line):
-        super().__init__(f'[Line {line}] LexerError: {message}')
+    def __init__(self,message,line):
+        super().__init__(f"{message}, line {line}")
 
-
-# ── Lexer ─────────────────────────────────────────────────────
+#---Lexer-------------------------------------------------------------------------------------------------
 class Lexer:
-    def __init__(self, source):
+    """
+    It categorises raw input into tokens, it goes through each character, checks each individually and gives the proper type of output. Takes only the source input as arguement
+    """
+
+    def __init__(self,source):
         self.source = source
-        self.pos    = 0          # current character index
-        self.line   = 1          # current line number (for error messages)
-        self.tokens = []
+        self.pos = 0 #the current index at the input
+        self.line = 1 #line number of the input
+        self.tokens = [] #will store the tokens 
 
-    # ── Helpers ──
-    def current(self):
-        """Return current char, or None if past end."""
-        if self.pos < len(self.source):
-            return self.source[self.pos]
-        return None
+    #---Lexer Methods---------------------------------------
+    def current_char(self):
+        """
+        Returns the current character the pointer is at
+        """
 
-    def peek(self):
-        """Look one character ahead without consuming."""
-        if self.pos + 1 < len(self.source):
-            return self.source[self.pos + 1]
-        return None
+        if self.pos < len(self.source): #if the pointer is not after the end of the input
+            return self.source[self.pos] #then, return the character on which the pointer is
+        else: #if the pointer is after the end,
+            return None #give None
+
+    def peek(self) :
+        """
+        It gives the next char which we will go if we move one step, but 
+        """
+        if self.pos + 1 < len(self.source): #if the next pointer will not point to end upon succession
+            return self.source[self.pos+1] #return the next value but don't store it 
+        else:
+            return None
 
     def advance(self):
-        """Consume current char and move forward."""
-        ch = self.source[self.pos]
-        self.pos += 1
-        if ch == '\n':
-            self.line += 1
-        return ch
+        """
+        Tells us which character it currently is on, and returns it, then moves one step ahead
+        """
+        char = self.source[self.pos] #store the value in a variable char
+        self.pos += 1 #then move one step ahead
 
-    def add(self, type_, value=None):
-        self.tokens.append(Token(type_, value, self.line))
+        if char == "\n": #if there is a line break, we need to update the line number
+            self.line += 1 #increase the line number
+        return char # and return the character
 
-    # ── Main tokenize loop ──
+    def add(self,type_,value=None):
+        """
+        Adds the value to the "tokens" list [line 10]
+        """
+        self.tokens.append(Token(type_,value,self.line)) #add the token
+
+    #---Main Tokenizer Function---------------------------------------------------------------------------------------------------
     def tokenize(self):
-        while self.current() is not None:
-            ch = self.current()
+        """
+        The main method which checks and categorises the tokens.
+        """
+        while self.current_char() is not None: 
+            char = self.current_char()
 
-            # Whitespace — skip silently
-            if ch in ' \t\r\n':
+            # Skip whitespaces
+            if char.isspace():
                 self.advance()
+            
+            # Check for numbers
+            elif char.isdigit():
+                self.read_numbers()
+            
+            # String mode when " is found
+            elif char == '"' or char == "'":
+                self.read_strings(char)
 
-            # Single-line comment //
-            elif ch == '/' and self.peek() == '/':
-                while self.current() is not None and self.current() != '\n':
-                    self.advance()
-
-            # String literal
-            elif ch == '"':
-                self.read_string()
-
-            # Number (int or float)
-            elif ch.isdigit():
-                self.read_number()
-
-            # Identifier or keyword
-            elif ch.isalpha() or ch == '_':
+            # Identifier or Keyword
+            elif char.isalnum() or char == '_':
                 self.read_ident()
+            
+            #Ignore comments.
+            elif char == '/' and self.peek() == '/': # //help me please :(
+                while self.current_char() is not None and self.current_char() != '\n':
+                    self.advance()
 
-            # Multi-char and single-char operators
-            elif ch == '*':
+            #---Multicharacter Tokens-------------------------------------------------------------
+            #---Stars-------------
+            elif char == '*':#**
                 if self.peek() == '*':
-                    self.advance(); self.advance()
-                    self.add(TT_STARSTAR, '**')
-                else:
+                    self.add(TT_STARSTAR,'**')
                     self.advance()
-                    self.add(TT_STAR, '*')
-
-            elif ch == '=':
+                    self.advance()
+                else:
+                    self.add(TT_STAR,'*')
+                    self.advance()
+            
+            #---Equals-------------
+            elif char == '=':
                 if self.peek() == '=':
-                    self.advance(); self.advance()
-                    self.add(TT_EQEQ, '==')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_EQEQ,'==')
                 else:
                     self.advance()
-                    self.add(TT_EQ, '=')
-
-            elif ch == '!':
+                    self.add(TT_EQ,'=')
+            
+            #---Greater Thans-----------------
+            elif char == '>':
                 if self.peek() == '=':
-                    self.advance(); self.advance()
-                    self.add(TT_NEQ, '!=')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_GTE,'>=')
                 else:
                     self.advance()
-                    self.add(TT_BANG, '!')
-
-            elif ch == '<':
+                    self.add(TT_GT,'>')
+            
+            #---Less Thans-------------------
+            elif char == '<':
                 if self.peek() == '=':
-                    self.advance(); self.advance()
-                    self.add(TT_LTE, '<=')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_LTE,'<=')
                 else:
                     self.advance()
-                    self.add(TT_LT, '<')
+                    self.add(TT_LT,'<')
 
-            elif ch == '>':
+            #---Bangs----------------------
+            elif char == '!':
                 if self.peek() == '=':
-                    self.advance(); self.advance()
-                    self.add(TT_GTE, '>=')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_NEQ,'!=')
                 else:
                     self.advance()
-                    self.add(TT_GT, '>')
-
-            elif ch == '&':
+                    self.add(TT_BANG,'!')
+           
+            #---And-----------------------
+            elif char == '&':
                 if self.peek() == '&':
-                    self.advance(); self.advance()
-                    self.add(TT_AND, '&&')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_AND,'&&')
                 else:
-                    raise LexerError("unexpected '&' — did you mean '&&'?", self.line)
-
-            elif ch == '|':
+                    raise LexerError("unexpected '&' - did you mean '&&'?",self.line)
+            #---OR-----------------------
+            elif char == '|':
                 if self.peek() == '|':
-                    self.advance(); self.advance()
-                    self.add(TT_OR, '||')
+                    self.advance()
+                    self.advance()
+                    self.add(TT_OR,'||')
                 else:
-                    raise LexerError("unexpected '|' — did you mean '||'?", self.line)
+                    raise LexerError("unexpected '|' - did you mean '||'?",self.line)
 
-            # Simple single-char tokens
-            elif ch == '+': self.advance(); self.add(TT_PLUS,     '+')
-            elif ch == '-': self.advance(); self.add(TT_MINUS,    '-')
-            elif ch == '/': self.advance(); self.add(TT_SLASH,    '/')
-            elif ch == '%': self.advance(); self.add(TT_PERCENT,  '%')
-            elif ch == '(': self.advance(); self.add(TT_LPAREN,   '(')
-            elif ch == ')': self.advance(); self.add(TT_RPAREN,   ')')
-            elif ch == '{': self.advance(); self.add(TT_LBRACE,   '{')
-            elif ch == '}': self.advance(); self.add(TT_RBRACE,   '}')
-            elif ch == '[': self.advance(); self.add(TT_LBRACKET, '[')
-            elif ch == ']': self.advance(); self.add(TT_RBRACKET, ']')
-            elif ch == ',': self.advance(); self.add(TT_COMMA,    ',')
-            elif ch == '.': self.advance(); self.add(TT_DOT,      '.')
-            elif ch == ':': self.advance(); self.add(TT_COLON,    ':')
+            #---Single Character Operators-----------------------------------------------------
+            elif char == '+':self.advance();self.add(TT_PLUS,'+')
+            elif char == '-':self.advance();self.add(TT_MINUS,'-')
+            elif char == '%':self.advance();self.add(TT_PERCENT,'%')
+            elif char == '(':self.advance();self.add(TT_LPAREN,'(')
+            elif char == ')':self.advance();self.add(TT_RPAREN,')')
+            elif char == '{':self.advance();self.add(TT_LBRACE,'{')
+            elif char == '}':self.advance();self.add(TT_RBRACE,'}')
+            elif char == '[':self.advance();self.add(TT_LBRACKET,'[')
+            elif char == ']':self.advance();self.add(TT_RBRACKET,']')
+            elif char == '.':self.advance();self.add(TT_DOT,'.')
+            elif char == ',':self.advance();self.add(TT_COMMA,',')
+            elif char == ':':self.advance();self.add(TT_COLON,':')
+            #---------------------------------------------------------------------------------
 
+            #---Unknown Character Error--------------------------------------------------------------------
             else:
-                raise LexerError(f"unexpected character '{ch}'", self.line)
+                raise LexerError(f"- Unknown character {char}",line = self.line)
 
-        self.add(TT_EOF)
-        return self.tokens
+        #---Always Add EOF-----------------------------------------------------------------------      
+        self.add(TT_EOF) #Always add EOF at the end.
+        return self.tokens #return the list of tokens
 
-    # ── Sub-readers ──
-    def read_string(self):
-        self.advance()  # consume opening "
-        result = []
-        while self.current() is not None and self.current() != '"':
-            if self.current() == '\n':
-                raise LexerError("unterminated string — newline inside string literal", self.line)
-            result.append(self.advance())
-        if self.current() is None:
-            raise LexerError("unterminated string — reached end of file", self.line)
-        self.advance()  # consume closing "
-        self.add(TT_STRING, ''.join(result))
+#---------------------------------------------------------------------------------------------------------------------
+    #---Number Readers---------------------------------------------        
+    def read_numbers(self): 
+        """
+        Reads the numbers and classifies as integer or float.
+        """
+        result = [] #create an empty list
+        is_float = False #init a var to store float state
+        while self.current_char() is not None and self.current_char().isdigit(): #if the current char is valid and a digit
+            result.append(self.advance()) #append it to list result
+        
+        if self.current_char() == '.':  #if you get a '.'
+            if self.peek() is not None and self.peek().isdigit():
+                is_float = True #set float state to true
+                result.append(self.advance()) #append '.' and move
+            
+            #if the current char is valid and a digit
+            while self.current_char() is not None and self.current_char().isdigit():
+                result.append(self.advance()) #add to list
 
-    def read_number(self):
-        result = []
-        is_float = False
-        while self.current() is not None and self.current().isdigit():
-            result.append(self.advance())
-        if self.current() == '.' and self.peek() is not None and self.peek().isdigit():
-            is_float = True
-            result.append(self.advance())  # consume '.'
-            while self.current() is not None and self.current().isdigit():
-                result.append(self.advance())
         text = ''.join(result)
         if is_float:
-            self.add(TT_FLOAT, float(text))
+            self.add(TT_FLOAT,float(text))
         else:
-            self.add(TT_INT, int(text))
+            self.add(TT_INTEGER,int(text))
+#-------------------------------------------------------------------------------------------------------------------------
+    #---String Reader-------------------------------------------------------------------------------------------------------
+    def read_strings(self,char): # "hello world"
+             
+            self.advance()
+            result = []
+            while self.current_char() is not None and self.current_char() != char:
+                if self.current_char() == "\n":
+                    raise LexerError("Unterminated string literal - newline inside string",line = self.line)
+                result.append(self.advance())
+            
+            if self.current_char() is None:
+                raise LexerError("Unterminated String Literal - EOF inside string",line = self.line)
+            
+            self.advance()
+            text = ''.join(result)
+            self.add(TT_STRING,text)
 
+#------------------------------------------------------------------------------------------
+    #---Identifier/Keyword Reader----------------------------------------------
     def read_ident(self):
         result = []
-        while self.current() is not None and (self.current().isalnum() or self.current() == '_'):
+        while self.current_char() is not None and self.current_char().isalnum():
             result.append(self.advance())
+        
         text = ''.join(result)
+
         if text in KEYWORDS:
-            self.add(TT_KEYWORD, text)
+            self.add(TT_KEYWORD,text)
         else:
-            self.add(TT_IDENT, text)
+            self.add(TT_IDENT,text)
 
-
-# ── Quick test ────────────────────────────────────────────────
-if __name__ == '__main__':
-    source = '''
-dec x = 10
-const PI = 3.14
-dec name = "Arc"
-if x > 5 && x < 20 {
-    out("yes")
-}
-// this is a comment
-func add(a, b) {
-    return a + b
-}
+#----------------------------------------------------------------------------------------
+#---Testing------------------------
+if __name__ == "__main__":
+    source = '''dec321
 '''
     lexer = Lexer(source)
     tokens = lexer.tokenize()
     for tok in tokens:
         print(tok)
+    
+    print(Lexer.read_numbers)
