@@ -4,8 +4,9 @@ TT_INTEGER = "INTEGER"
 TT_FLOAT = "FLOAT"
 TT_STRING = "STRING"
 TT_SLASH = "SLASH"
+TT_STARSTAR = "STARSTAR"
 
-#---Tokens-----------------------------------------------------------------------------------------------------------------------
+#---Tokens-------------------------------------------------------------------------------------------------
 class Token:
     """
     Structures all the token instances, the template for all the tokens, this is where  we input raw data about the tokens, it comes out as structured form ready to be appended to tokens list.
@@ -18,11 +19,16 @@ class Token:
     #Represents a formatted structure when printed instead of memory address.
     def __repr__(self):
         if self.value: #if the token has a value
-            return f"{self.type_}:{self.value}" #return with type and its value
+            return f"({self.type_}:{self.value}, line = {self.line})" #return with type and its value
         else: #if it doesn't have a value
-            return f"{self.type_}" #return only the type
+            return f"({self.type_}, line = {self.line})" #return only the type
 
-#---Lexer------------------------------------------------------------------------------------------------------------------------
+#---LexerError-------------------------------------------------------------------------------------------
+class LexerError(Exception):
+    def __init__(self,message,line):
+        super().__init__(f"{message} was found while parsing, line {line}")
+
+#---Lexer-------------------------------------------------------------------------------------------------
 class Lexer:
     """
     It categorises raw input into tokens, it goes through each character, checks each individually and gives the proper type of output. Takes only the source input as arguement
@@ -40,7 +46,7 @@ class Lexer:
         Returns the current character the pointer is at
         """
 
-        if self.pos < len(source): #if the pointer is not after the end of the input
+        if self.pos < len(self.source): #if the pointer is not after the end of the input
             return self.source[self.pos] #then, return the character on which the pointer is
         else: #if the pointer is after the end,
             return None #give None
@@ -49,7 +55,7 @@ class Lexer:
         """
         It gives the next char which we will go if we move one step, but 
         """
-        if self.current_char is not None and self.pos + 1 < len(source): #if the next pointer will not point to end upon succession
+        if self.pos + 1 < len(self.source): #if the next pointer will not point to end upon succession
             return self.source[self.pos+1] #return the next value but don't store it 
         else:
             return None
@@ -88,13 +94,24 @@ class Lexer:
                 self.read_numbers()
             
             # String mode when " is found
-            elif char == '"':
-                self.read_strings()
-
+            elif char == '"' or char == "'":
+                self.read_strings(char)
+            
+            #Ignore comments.
             elif char == '/' and self.peek() == '/': # //help me please :(
-                while self.current_char() is not None or self.current_char() != '\n':
+                while self.current_char() is not None and self.current_char() != '\n':
                     self.advance()
 
+            
+
+
+
+
+            else:
+                raise LexerError(f"- Unknown character {char}",line = self.line)
+                
+                
+                
         self.add(TT_EOF) #Always add EOF at the end.
         return self.tokens #return the list of tokens
 
@@ -108,9 +125,12 @@ class Lexer:
         while self.current_char() is not None and self.current_char().isdigit(): #if the current char is valid and a digit
             result.append(self.advance()) #append it to list result
         
-        if self.current_char() == '.' and self.peek() is not None and self.peek().isdigit(): #if you get a '.'
-            is_float = True #set float state to true
-            result.append(self.advance()) #append '.' and move
+        if self.current_char() == '.':  #if you get a '.'
+            if self.peek() is not None and self.peek().isdigit():
+                is_float = True #set float state to true
+                result.append(self.advance()) #append '.' and move
+            else:
+                raise LexerError("Unterminated float literal - no digit after \'.\'",line = self.line)
             
             #if the current char is valid and a digit
             while self.current_char() is not None and self.current_char().isdigit():
@@ -124,16 +144,17 @@ class Lexer:
             self.add(TT_INTEGER,int(text))
 
     #---String Reader-------------------------------------------------------------------------------------------------------
-    def read_strings(self): # "hello world"
+    def read_strings(self,char): # "hello world"
+             
             self.advance()
             result = []
-            while self.current_char() is not None and self.current_char() != '"':
+            while self.current_char() is not None and self.current_char() != char:
                 if self.current_char() == "\n":
-                    raise SyntaxError("Unterminated string literal - newline inside string")
+                    raise LexerError("Unterminated string literal - newline inside string",line = self.line)
                 result.append(self.advance())
             
             if self.current_char() is None:
-                raise SyntaxError("Unterminated String Literal - EOF inside string")
+                raise LexerError("Unterminated String Literal - EOF inside string",line = self.line)
             
             self.advance()
             text = ''.join(result)
@@ -142,7 +163,9 @@ class Lexer:
 
 #---Testing------------------------
 if __name__ == "__main__":
-    source = '''1234 / 12312'''
+    source = """1234.122 123** 
+    """
     lexer = Lexer(source)
     tokens = lexer.tokenize()
-    print(tokens)
+    for tok in tokens:
+        print(tok)
