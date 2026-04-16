@@ -33,6 +33,7 @@ TT_RBRACKET   = 'RBRACKET'    # ]
 TT_COMMA      = 'COMMA'       # ,
 TT_DOT        = 'DOT'         # .
 TT_COLON      = 'COLON'       # :
+TT_SEMICOLON  = 'SEMICOLON'   # ;
 TT_EOF        = 'EOF'
 
 #---Keywords----------------------------------------------------------------------------------------------
@@ -56,7 +57,7 @@ class Token:
         self.value = value 
         self.line = line 
 
-    #Represents a formatted structure when printed instead of memory address.
+    # Represents a formatted structure when printed instead of memory address.
     def __repr__(self):
         if self.value is not None: #if the token has a value
             return f"({self.type_}:{self.value}, line = {self.line})" #return with type and its value
@@ -81,7 +82,7 @@ class Lexer:
         self.tokens = [] #will store the tokens 
 
     #---Lexer Methods---------------------------------------
-    def current_char(self):
+    def current_char(self) -> str:
         """
         Returns the current character the pointer is at
         """
@@ -91,7 +92,7 @@ class Lexer:
         else: #if the pointer is after the end,
             return None #give None
 
-    def peek(self) :
+    def peek(self) -> str :
         """
         It gives the next char which we will go if we move one step, but 
         """
@@ -100,7 +101,7 @@ class Lexer:
         else:
             return None
 
-    def advance(self):
+    def advance(self) -> str:
         """
         Tells us which character it currently is on, and returns it, then moves one step ahead
         """
@@ -111,14 +112,14 @@ class Lexer:
             self.line += 1 #increase the line number
         return char # and return the character
 
-    def add(self,type_,value=None):
+    def add(self,type_,value=None) -> Token:
         """
         Adds the value to the "tokens" list [line 10]
         """
         self.tokens.append(Token(type_,value,self.line)) #add the token
 
     #---Main Tokenizer Function---------------------------------------------------------------------------------------------------
-    def tokenize(self):
+    def tokenize(self) -> list:
         """
         The main method which checks and categorises the tokens.
         """
@@ -227,6 +228,7 @@ class Lexer:
             elif char == '.':self.advance();self.add(TT_DOT,'.')
             elif char == ',':self.advance();self.add(TT_COMMA,',')
             elif char == ':':self.advance();self.add(TT_COLON,':')
+            elif char == ';':self.advance();self.add(TT_SEMICOLON,';')
             #---------------------------------------------------------------------------------
 
             #---Unknown Character Error--------------------------------------------------------------------
@@ -239,7 +241,7 @@ class Lexer:
 
 #---------------------------------------------------------------------------------------------------------------------
     #---Number Readers---------------------------------------------        
-    def read_numbers(self): 
+    def read_numbers(self)-> Token: 
         """
         Reads the numbers and classifies as integer or float.
         """
@@ -257,51 +259,53 @@ class Lexer:
             while self.current_char() is not None and self.current_char().isdigit():
                 result.append(self.advance()) #add to list
 
-        text = ''.join(result)
+        text = ''.join(result) #join the list into a string 
         if is_float:
-            self.add(TT_FLOAT,float(text))
+            self.add(TT_FLOAT,float(text)) # is it is a float, term as float
         else:
-            self.add(TT_INTEGER,int(text))
+            self.add(TT_INTEGER,int(text)) # else integers
 #-------------------------------------------------------------------------------------------------------------------------
     #---String Reader-------------------------------------------------------------------------------------------------------
-    def read_strings(self,char): # "hello world"
+    def read_strings(self,char) -> Token: # "hello world"
+            """
+            Called when a ' or " is spotted and continues consuming until another " found.
+            """
              
-            self.advance()
-            result = []
-            while self.current_char() is not None and self.current_char() != char:
+            self.advance() # move over the first " and reach the first char
+            result = [] # to store the chars into 
+            while self.current_char() is not None and self.current_char() != char: # loop until the current char is not none and the current char is not ' or "
                 if self.current_char() == "\n":
-                    raise LexerError("Unterminated string literal - newline inside string",line = self.line)
-                result.append(self.advance())
+                    raise LexerError("Unterminated string literal - newline inside string",line = self.line) # error if there is a newline before closing ' or "
+                result.append(self.advance()) #append the chars into result
             
-            if self.current_char() is None:
-                raise LexerError("Unterminated String Literal - EOF inside string",line = self.line)
+            if self.current_char() is None: # if the current char is None
+                raise LexerError("Unterminated String Literal - EOF inside string",line = self.line) #another error
             
-            self.advance()
-            text = ''.join(result)
-            self.add(TT_STRING,text)
+            self.advance() #move over the ' or ""
+            text = ''.join(result) #join the list into string
+            self.add(TT_STRING,text) #add into tokens class
 
 #------------------------------------------------------------------------------------------
     #---Identifier/Keyword Reader----------------------------------------------
-    def read_ident(self):
+    def read_ident(self) -> Token:
+        """
+        Given a word, it declares if it is a keyword or an identifier
+        """
         result = []
-        while self.current_char() is not None and self.current_char().isalnum():
-            result.append(self.advance())
+        while self.current_char() is not None and self.current_char().isalnum(): #loop until the curr char is an alphanum
+            result.append(self.advance()) #consume the char and append and move ahead
         
-        text = ''.join(result)
+        text = ''.join(result) # join the list into string
 
-        if text in KEYWORDS:
+        if text in KEYWORDS: # if the text is a keyword
             self.add(TT_KEYWORD,text)
         else:
-            self.add(TT_IDENT,text)
+            self.add(TT_IDENT,text) #if an identifier
 
 #----------------------------------------------------------------------------------------
-#---Testing------------------------
-if __name__ == "__main__":
-    source = '''dec321
-'''
+if __name__ == '__main__':
+    source  = "dec x = 293923542865978265928376592783659278364592783659178;"
     lexer = Lexer(source)
     tokens = lexer.tokenize()
     for tok in tokens:
         print(tok)
-    
-    print(Lexer.read_numbers)
