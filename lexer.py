@@ -34,6 +34,7 @@ TT_COMMA      = 'COMMA'       # ,
 TT_DOT        = 'DOT'         # .
 TT_COLON      = 'COLON'       # :
 TT_SEMICOLON  = 'SEMICOLON'   # ;
+TT_NEWLINE    = 'NEWLINE'
 TT_EOF        = 'EOF'
 
 #---Keywords----------------------------------------------------------------------------------------------
@@ -126,8 +127,13 @@ class Lexer:
         while self.current_char() is not None: 
             char = self.current_char()
 
+            # Newline Termination
+            if char == '\n':
+                self.advance()
+                self.add(TT_NEWLINE)
+
             # Skip whitespaces
-            if char.isspace():
+            elif char.isspace():
                 self.advance()
             
             # Check for numbers
@@ -228,7 +234,7 @@ class Lexer:
             elif char == '.':self.advance();self.add(TT_DOT,'.')
             elif char == ',':self.advance();self.add(TT_COMMA,',')
             elif char == ':':self.advance();self.add(TT_COLON,':')
-            elif char == ';':self.advance();self.add(TT_SEMICOLON,';')
+            elif char == ';':self.advance()
             #---------------------------------------------------------------------------------
 
             #---Unknown Character Error--------------------------------------------------------------------
@@ -303,9 +309,3 @@ class Lexer:
             self.add(TT_IDENT,text) #if an identifier
 
 #----------------------------------------------------------------------------------------
-if __name__ == '__main__':
-    source  = "dec x = 293923542865978265928376592783659278364592783659178;"
-    lexer = Lexer(source)
-    tokens = lexer.tokenize()
-    for tok in tokens:
-        print(tok)
