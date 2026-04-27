@@ -1,14 +1,14 @@
-class ASTNodes:
+class ASTNodes: #parent class, all others inherit this 
     pass
 
-class IntegerLiteral(ASTNodes):
+class IntegerLiteral(ASTNodes): #only stores the value of the integer
     def __init__(self, value):
         self.value = value
     
     def __repr__(self):
         return f"{self.value}"
 
-class Identifier(ASTNodes):
+class Identifier(ASTNodes): #only stores the name of the identifier
     def __init__(self,name):
         self.name = name 
 
@@ -16,25 +16,25 @@ class Identifier(ASTNodes):
         return f"Identifier({self.name})"
 
 
-class StringLiteral(ASTNodes):
+class StringLiteral(ASTNodes): #only stores the value of the string literal
     def __init__(self,value):
         self.value = value 
     
     def __repr__(self):
         return f"String({self.value})"
 
-class BoolLiteral(ASTNodes):
+class BooleanLiteral(ASTNodes): #only stores either true or false
     def __init__(self,value):
         self.value = value 
 
     def __repr__(self):
         return f"Bool({self.value})"
 
-class NullLiteral(ASTNodes):
+class NullLiteral(ASTNodes): #doesn't store anything 
     def __repr__(self):
         return f"Null()"
 
-class ArrayLiteral(ASTNodes):
+class ArrayLiteral(ASTNodes): #stores the elements 
     def __init__(self,elements):
         self.elements = elements 
     
@@ -42,7 +42,7 @@ class ArrayLiteral(ASTNodes):
         elements_str = ", ".join(str(elem) for elem in self.elements)
         return f"Array({elements_str})"
 
-class BinaryOp(ASTNodes):
+class BinaryOp(ASTNodes): #stores the left, right value and the operator 
     def __init__(self,left,op,right):
         self.left = left
         self.op = op
@@ -51,7 +51,7 @@ class BinaryOp(ASTNodes):
     def __repr__(self):
         return f"BinOp({self.left} {self.op} {self.right})"
 
-class UnaryOp(ASTNodes):
+class UnaryOp(ASTNodes): #stores the operator and the value 
     def __init__(self,op,value):
         self.op = op
         self.value = value 
@@ -59,7 +59,7 @@ class UnaryOp(ASTNodes):
     def __repr__(self):
         return f"UnaryOp({self.op}{self.value})"
 
-class Assignment(ASTNodes):
+class Assignment(ASTNodes): #stores the target to assign and the value to assign 
     def __init__(self,target,value):
         self.target = target 
         self.value = value 
@@ -67,7 +67,7 @@ class Assignment(ASTNodes):
     def __repr__(self):
         return f"Assignment({self.target} = {self.value})"
 
-class Declaration(ASTNodes):
+class Declaration(ASTNodes): #stores the name, value, and maintains a srare if its a constant 
     def __init__(self,name,value,is_const = False):
         self.name = name 
         self.value = value 
@@ -77,7 +77,7 @@ class Declaration(ASTNodes):
         kind = "const" if self.is_const else "dec"
         return f"{kind} {name} = {value}"
 
-class FunctionCall(ASTNodes):
+class FunctionCall(ASTNodes): #stores the function name and arguements
     def __init__(self,name,arguements):
         self.name = name 
         self.arguements = arguements
@@ -86,7 +86,7 @@ class FunctionCall(ASTNodes):
         arg_str = ", ".join(str(arg) for arg in self.arguements)
         return f"{self.name} {arg_str}"
 
-class IfStatement(ASTNodes):
+class IfStatement(ASTNodes): #stores the expression to check for, the then body, elif and else clauses if any
     def __init__(self,condition,then_part,elif_part = None ,else_part = None):
         self.condition = condition
         self.then_part = then_part
@@ -96,7 +96,7 @@ class IfStatement(ASTNodes):
     def __repr__(self):
         return f"If({self.condition})"
 
-class LoopStatement(ASTNodes):
+class LoopStatement(ASTNodes): #only stores the loop body
     def __init__(self,body):
         self.body = body
 

@@ -31,3 +31,36 @@ class Parser:
         else:
             print("error")
         
+    def parse_factor(self):
+        if self.current_token.type_ in (TT_INTEGER,TT_FLOAT):
+            val = self.current_token.value
+            self.advance()
+            return IntegerLiteral(val)
+        
+        elif self.current_token.type_ in (TT_STRING):
+            val = self.current_token.value
+            self.advance()
+            return StringLiteral(val)
+        
+        elif self.current_token.type_ in (TT_BOOL):
+            val = self.current_token.value
+            self.advance()
+            return BooleanLiteral(val)
+
+        elif self.current_token.type_ in (TT_NULL):
+            self.advance()
+            return NullLiteral()
+
+        elif self.current_token.type_ in (TT_IDENT):
+            val = self.current_token.value
+            self.advance()
+            return Identifier(val)
+        
+        elif self.current_token.type_ in (TT_LPAREN):
+            self.advance()
+            expression = self.parse_expression()
+            self.expect(TT_RPAREN)
+            return expression 
+
+        else:
+            raise Exception("Invalid factor")
