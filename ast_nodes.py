@@ -6,7 +6,7 @@ class IntegerLiteral(ASTNodes): #only stores the value of the integer
         self.value = value
     
     def __repr__(self):
-        return f"{self.value}"
+        return f"Integer({self.value})"
 
 class Identifier(ASTNodes): #only stores the name of the identifier
     def __init__(self,name):
